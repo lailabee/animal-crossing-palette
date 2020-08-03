@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 import random
-import wget
+import os
 
 # returns the euclidean distance of two triples aka color values of two pixels
 def dist(t1,t2):
@@ -34,10 +34,10 @@ def genrandomcolor():
 def get_palette(name,path):
 
 	# turn image into numpy array
-
 	image = Image.open(path)
 	im = np.array(image)
-	rows,cols = im.shape
+	rows = im.shape[0]
+	cols = im.shape[1]
 	loops = 100 #iterations to convergence
 	k = 5 #clusters
 
@@ -95,13 +95,14 @@ def get_palette(name,path):
 	return palette_path
 
 def get_villager():
-	ac = pd.read_csv("/data/acnh_characters.csv")
+	ac = pd.read_csv("data/acnh_characters.csv")
 	line = random.randint(1,445)
 	name = ac['Name'][line]
 	url = "" + ac['URL'][line]
-	icon = wget.download(url)
+	filename = name + ".png"
+	os.system("wget -O {0} {1}".format(filename,url))
 
-	return name,icon
+	return name,filename
 
 def tweet(villager,palette,message):
   auth = tweepy.OAuthHandler(secrets.consumer_key, secrets.consumer_secret)
@@ -114,4 +115,5 @@ def tweet(villager,palette,message):
 if __name__ == '__main__':
 	name,icon = get_villager()
 	palette = get_palette(name,icon)
-	tweet(icon,palette,name)
+	print(name,icon,palette)
+	#tweet(icon,palette,name)

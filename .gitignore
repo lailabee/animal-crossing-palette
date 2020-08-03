@@ -5,3 +5,8 @@ secrets.py
 
 # data spreadsheets
 /data/*
+
+# images
+*.png
+
+/__pycache__/*
