@@ -2,3 +2,6 @@ secrets.py
 
 # shell scripts
 *.sh
+
+# data spreadsheets
+/data/*
