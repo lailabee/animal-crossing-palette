@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import random
 import os
+import matplotlib.pyplot as plt
 
 # returns the euclidean distance of two triples aka color values of two pixels
 def dist(t1,t2):
@@ -38,7 +39,7 @@ def get_palette(name,path):
 	im = np.array(image)
 	rows = im.shape[0]
 	cols = im.shape[1]
-	loops = 100 #iterations to convergence
+	loops = 1 #iterations to convergence
 	k = 5 #clusters
 
 	# dict of clusters {c1,c2,c3,c4,c5}
@@ -86,14 +87,14 @@ def get_palette(name,path):
 	    l.append(clusters[c][0])
 	palette = np.array([l])
 
-	print(palette)
-
 	# turn palette into jpg, return filename
 
-	PIL_image = Image.fromarray(np.uint8(palette)).convert('RGB')
+	plt.imshow(palette)
+	fig = plt.gcf()
+	plt.tick_params(left=False, bottom=False, labelbottom=False, labelleft=False) #remove ticks
+	fig.set_size_inches(5, 1)
 	palette_path = name + "palette.jpg"
-	PIL_image = PIL_image.resize((256,64))
-	PIL_image.save(palette_path)
+	fig.savefig(palette_path)
 
 	return palette_path
 
@@ -113,9 +114,15 @@ def tweet(villager,palette,message):
   api = tweepy.API(auth)
   auth.secure = True
   print("Currently Tweeting.......")
-  api.update_with_media(villager,palette,status=message)
+
+  filenames = [villager,palette]
+  media_ids = []
+  for f in filenames:
+  	res = api.media_upload(f)
+  	media_ids.append(res.media_id)
+  api.update_status(status=message,media_ids=media_ids)
 
 if __name__ == '__main__':
 	name,icon = get_villager()
 	palette = get_palette(name,icon)
-	#tweet(icon,palette,name)
+	tweet(icon,palette,name)
