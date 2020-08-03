@@ -39,7 +39,7 @@ def get_palette(name,path):
 	im = np.array(image)
 	rows = im.shape[0]
 	cols = im.shape[1]
-	loops = 1 #iterations to convergence
+	loops = 50 #iterations to convergence
 	k = 5 #clusters
 
 	# dict of clusters {c1,c2,c3,c4,c5}
@@ -92,11 +92,23 @@ def get_palette(name,path):
 	plt.imshow(palette)
 	fig = plt.gcf()
 	plt.tick_params(left=False, bottom=False, labelbottom=False, labelleft=False) #remove ticks
-	fig.set_size_inches(5, 1)
+	fig.set_size_inches(2.56, 0.5)
+	icon_path = name+ ".png"
 	palette_path = name + "palette.jpg"
 	fig.savefig(palette_path)
 
-	return palette_path
+	def get_concat_v(im1, im2):
+	    dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+	    dst.paste(im1, (0, 0))
+	    dst.paste(im2, (0, im1.height))
+	    return dst
+
+	final_path = name + "full.jpg"
+	im2 = Image.open(icon_path)
+	im1 = Image.open(palette_path)
+	get_concat_v(im1,im2).save(final_path)
+
+	return final_path
 
 def get_villager():
 	ac = pd.read_csv("data/acnh_characters.csv")
@@ -108,21 +120,25 @@ def get_villager():
 
 	return name,filename
 
-def tweet(villager,palette,message):
+def tweet(img,name):
   auth = tweepy.OAuthHandler(secrets.consumer_key, secrets.consumer_secret)
   auth.set_access_token(secrets.access_token, secrets.access_token_secret)
   api = tweepy.API(auth)
   auth.secure = True
   print("Currently Tweeting.......")
+  message = "A palette for " + name + "!"
+  api.update_with_media(img,status=message)
 
+  '''
   filenames = [villager,palette]
   media_ids = []
   for f in filenames:
   	res = api.media_upload(f)
   	media_ids.append(res.media_id)
   api.update_status(status=message,media_ids=media_ids)
+  '''
 
 if __name__ == '__main__':
 	name,icon = get_villager()
-	palette = get_palette(name,icon)
-	tweet(icon,palette,name)
+	img = get_palette(name,icon)
+	#tweet(img,name)
