@@ -3,7 +3,9 @@ import secrets #twitter keys
 import math
 from PIL import Image
 import numpy as np
+import pandas as pd
 import random
+import wget
 
 # returns the euclidean distance of two triples aka color values of two pixels
 def dist(t1,t2):
@@ -29,7 +31,7 @@ def genrandomcolor():
 
     return list(np.random.choice(range(256), size=3))
 
-def get_palette(path):
+def get_palette(name,path):
 
 	# turn image into numpy array
 
@@ -83,12 +85,23 @@ def get_palette(path):
 	for c in clusters:
 	    l.append(clusters[c][0])
 	palette = np.array([l])
-	
-	return palette
+
+	# turn palette into jpg, return filename
+
+	PIL_image = Image.fromarray(np.uint8(palette)).convert('RGB')
+	palette_path = name + "palette.jpg"
+	PIL_image.save(palette_path)
+
+	return palette_path
 
 def get_villager():
+	ac = pd.read_csv("/data/acnh_characters.csv")
+	line = random.randint(1,445)
+	name = ac['Name'][line]
+	url = "" + ac['URL'][line]
+	icon = wget.download(url)
 
-	return vname,vicon
+	return name,icon
 
 def tweet(villager,palette,message):
   auth = tweepy.OAuthHandler(secrets.consumer_key, secrets.consumer_secret)
@@ -99,5 +112,6 @@ def tweet(villager,palette,message):
   api.update_with_media(villager,palette,status=message)
 
 if __name__ == '__main__':
-	name, icon = get_villager()
-	tweet(icon,get_palette(),name)
+	name,icon = get_villager()
+	palette = get_palette(name,icon)
+	tweet(icon,palette,name)
