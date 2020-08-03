@@ -86,10 +86,13 @@ def get_palette(name,path):
 	    l.append(clusters[c][0])
 	palette = np.array([l])
 
+	print(palette)
+
 	# turn palette into jpg, return filename
 
 	PIL_image = Image.fromarray(np.uint8(palette)).convert('RGB')
 	palette_path = name + "palette.jpg"
+	PIL_image = PIL_image.resize((256,64))
 	PIL_image.save(palette_path)
 
 	return palette_path
@@ -115,5 +118,4 @@ def tweet(villager,palette,message):
 if __name__ == '__main__':
 	name,icon = get_villager()
 	palette = get_palette(name,icon)
-	print(name,icon,palette)
 	#tweet(icon,palette,name)
