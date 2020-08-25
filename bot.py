@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import random
 import os
-import matplotlib.pyplot as plt
+import cv2
 
 # returns the euclidean distance of two triples aka color values of two pixels
 def dist(t1,t2):
@@ -39,7 +39,7 @@ def get_palette(name,path):
 	im = np.array(image)
 	rows = im.shape[0]
 	cols = im.shape[1]
-	loops = 50 #iterations to convergence
+	loops = 25 #iterations to convergence
 	k = 5 #clusters
 
 	# dict of clusters {c1,c2,c3,c4,c5}
@@ -85,30 +85,61 @@ def get_palette(name,path):
 	l=[]
 	for c in clusters:
 	    l.append(clusters[c][0])
-	palette = np.array([l])
 
-	# turn palette into jpg, return filename
+	#palette = np.array([l])
+	palette = []
+	for colorlist in l:
+		palette.append((colorlist[0],colorlist[1],colorlist[2]))
 
-	plt.imshow(palette)
-	fig = plt.gcf()
-	plt.tick_params(left=False, bottom=False, labelbottom=False, labelleft=False) #remove ticks
-	fig.set_size_inches(2.56, 0.5)
+	hexcodes = ""
+	l = sorted(l, key=lambda x: sum(x))
+	for color in l:
+		hexcodes += "%02x%02x%02x" % (color[0],color[1],color[2])
+		if color is not l[4]:
+			hexcodes += ", "
+
+	def plot_colors(palette):
+	    # initialize the bar chart representing the relative frequency
+	    # of each of the colors
+	    bar = np.zeros((85, 256, 3), dtype="uint8")
+	    startX = 0
+	    margin = 13
+
+	    # Sort the centroids to form a gradient color look
+	    centroids = sorted(palette, key=lambda x: sum(x))
+	    
+	    new_length = 256 - 10 * 5
+
+	    # loop over the percentage of each cluster and the color of
+	    # each cluster
+	    for color in centroids:
+	        endX = startX + new_length/5
+	        cv2.rectangle(bar, (int(startX), 0), (int(endX), 85), (int(color[0]),int(color[1]),int(color[2])), -1)
+	        cv2.rectangle(bar, (int(endX), 0), (int(endX + margin), 85),
+	                      (255, 255, 255), -1)
+	        startX = endX + margin
+
+	    # return the bar chart
+	    return bar
+
+	# Let's plot the retrieved colors. See the plot_colors function
+	    # for more details
+	bar = plot_colors(palette)
+
+	im = np.zeros((10, int(rows), 3), np.uint8)
+	cv2.rectangle(im, (0, 0), (int(rows), 10),
+	              (255, 255, 255), -1)
+
 	icon_path = name+ ".png"
-	palette_path = name + "palette.jpg"
-	fig.savefig(palette_path)
-
-	def get_concat_v(im1, im2):
-	    dst = Image.new('RGB', (im1.width, im1.height + im2.height))
-	    dst.paste(im1, (0, 0))
-	    dst.paste(im2, (0, im1.height))
-	    return dst
-
-	final_path = name + "full.jpg"
+	# Now we combine the video frame and the color bar into one image
 	im2 = Image.open(icon_path)
-	im1 = Image.open(palette_path)
-	get_concat_v(im1,im2).save(final_path)
+	im2 = im2.convert('RGB')
 
-	return final_path
+	final_path = name + "full.png"
+	newImg = np.concatenate([im2, im, bar, im], axis=0)
+	cv2.imwrite(final_path, newImg)
+
+	return final_path,hexcodes
 
 def get_villager():
 	ac = pd.read_csv("data/acnh_characters.csv")
@@ -120,25 +151,16 @@ def get_villager():
 
 	return name,filename
 
-def tweet(img,name):
+def tweet(img,name,hexcodes):
   auth = tweepy.OAuthHandler(secrets.consumer_key, secrets.consumer_secret)
   auth.set_access_token(secrets.access_token, secrets.access_token_secret)
   api = tweepy.API(auth)
   auth.secure = True
   print("Currently Tweeting.......")
-  message = "A palette for " + name + "!"
+  message = "A palette for " + name + "!\nHexcodes: " + hexcodes
   api.update_with_media(img,status=message)
-
-  '''
-  filenames = [villager,palette]
-  media_ids = []
-  for f in filenames:
-  	res = api.media_upload(f)
-  	media_ids.append(res.media_id)
-  api.update_status(status=message,media_ids=media_ids)
-  '''
 
 if __name__ == '__main__':
 	name,icon = get_villager()
-	img = get_palette(name,icon)
-	#tweet(img,name)
+	img,hexcodes = get_palette(name,icon)
+	tweet(img,name,hexcodes)
